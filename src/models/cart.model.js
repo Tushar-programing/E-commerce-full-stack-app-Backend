@@ -6,18 +6,16 @@ const cartSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Product"
         },
-        owner: {
-            type: Schema.Types.ObjectId,
-            ref: "User"
-        },
-        userid: {
+        userId: {
             type: Schema.Types.ObjectId,
             ref: "User"
         },
         quantity: {
             type: Number,
             required: true,
-        }
+        },
     },
     {timestamps: true}
 )
+
+export const Cart = mongoose.model("Cart", cartSchema)

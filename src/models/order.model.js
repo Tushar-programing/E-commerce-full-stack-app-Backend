@@ -1,12 +1,8 @@
 import mongoose,{model, Schema} from "mongoose";
-import { User } from "./user.model";
+// import { User } from "./user.model.js";
 
 const orderSchema = new Schema(
     {
-        owner: {
-            type: Schema.Types.ObjectId,
-            ref: "User"
-        },
         product: {
             type: Schema.Types.ObjectId,
             ref: "Product"
@@ -18,7 +14,28 @@ const orderSchema = new Schema(
         quantity: {
             type: Number,
             required: true,
-        }
+        },
+        adress: {
+            type: Schema.Types.ObjectId,
+            ref: "Adress"
+        },
+        status: {
+            type: String,
+            required: true,
+        },
+        paymentStatus: {
+            type: String,
+            required: true,
+            lowercase: true,
+        },
+        owner: {
+            type: Schema.Types.ObjectId,
+            ref: "User"
+        },
+        // price: {
+        //     type: Number,
+        //     required: true,
+        // }
     },
     {
         timestamps: true,
