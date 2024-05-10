@@ -79,12 +79,13 @@ const updateAdress = asyncHandler(async(req, res) => {
 
 const deleteAdress = asyncHandler(async(req, res) => {
     const {adressId} = req.params;
+    // console.log(adressId);
 
     if (!adressId) {
         throw new ApiError(400, "adressId is missing from the url parameters")
     }
 
-    const del = Adress.findByIdAndDelete(adressId);
+    const del = await Adress.findByIdAndDelete(adressId);
 
     if (!del) {
         throw new ApiError(400, "unable to delete Adress")

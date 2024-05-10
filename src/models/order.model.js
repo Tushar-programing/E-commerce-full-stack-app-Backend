@@ -26,12 +26,48 @@ const orderSchema = new Schema(
         paymentStatus: {
             type: String,
             required: true,
-            lowercase: true,
         },
         owner: {
             type: Schema.Types.ObjectId,
             ref: "User"
         },
+        name: {
+            type: String,
+            required: true
+        },
+        company: {
+            type: String,
+            required: true
+        },
+        phone: {
+            type: Number,
+            required: true
+        },
+        adress1: {
+            type: String,
+            required: true
+        },
+        adress2: {
+            type: String,
+            required: true
+        },
+        city: {
+            type: String,
+            required: true
+        },
+        country: {
+            type: String,
+            required: true
+        },
+        state: {
+            type: String,
+            required: true
+        },
+        zip: {
+            type: Number,
+            required: true
+        }
+        
         // price: {
         //     type: Number,
         //     required: true,

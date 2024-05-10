@@ -1,4 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
+// import { ApiError } from "../utils/apiError.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
@@ -6,7 +7,7 @@ import { User } from "../models/user.model.js";
 // import { JsonWebTokenError } from "jsonwebtoken";
 import jwt from "jsonwebtoken"
 
-console.log("its working 2")
+// console.log("its working 2")
 
 const generateAccessAndRefreshTokens = async(userid) => {
     try {
@@ -129,6 +130,7 @@ const logoutUser = asyncHandler(async(req, res) => {
         secure: true,
         sameSite: 'none',
     }
+    // console.log("working");
 
     return res.status(200)
     .clearCookie("accessToken", options)

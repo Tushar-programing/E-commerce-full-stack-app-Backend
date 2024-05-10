@@ -8,7 +8,7 @@ import { Cart } from "../models/cart.model.js";
 const create = asyncHandler(async(req, res) => {
     const { quantity } = req.body;
     const { product } = req.params;
-
+    console.log(quantity, product);
 
     if (!product || !quantity) {
         throw new ApiError(400, "Please provide product and quantity");
@@ -19,15 +19,14 @@ const create = asyncHandler(async(req, res) => {
         userId: req.user._id
     })
 
-
     if (existedCart) {
         // throw new ApiError(400, "this is working")
-        if (existedCart.quantity < 20) {
+        if ((existedCart.quantity + quantity) <= 20) {
             const plus = await Cart.findByIdAndUpdate(
                 existedCart._id,
                 {
                     $set: {
-                        quantity: ++existedCart.quantity ,
+                        quantity: (quantity + existedCart.quantity ) ,
                     }
                 },
                 {new: true}
@@ -41,7 +40,23 @@ const create = asyncHandler(async(req, res) => {
             .status(200)
             .json(new ApiResponse(200, plus, "update cart succesfully"))
         } else {
-            throw new ApiError(400, "unable to add more than 20 pcs")
+            const plus = await Cart.findByIdAndUpdate(
+                existedCart._id,
+                {
+                    $set: {
+                        quantity: 20 ,
+                    }
+                },
+                {new: true}
+            )
+    
+            if (!plus) {
+                throw new ApiError(401, "unable to update quantity")
+            }
+    
+            return res
+            .status(200)
+            .json(new ApiResponse(200, plus, "You can not add more than 20 pcs"))
         }
         
     }
@@ -60,7 +75,6 @@ const create = asyncHandler(async(req, res) => {
     .status(200)
     .json(new ApiResponse(200, create, "Cart created successfully"));
 })
-
 
 const updateCart = asyncHandler(async(req, res) => {
     const {cart} = req.params;

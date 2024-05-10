@@ -57,7 +57,11 @@ const productSchema = new Schema(
         owner: {
             type: Schema.Types.ObjectId,
             ref: "User"
-        }
+        },
+        category: {
+            type: String,
+            required: true,
+        },
     },
     {
         timestamps: true,

@@ -2,10 +2,10 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Product } from "../models/product.model.js";
-import { Cart } from "../models/cart.model.js";
 // import { User } from "../models/user.model.js";
 import { Order } from "../models/order.model.js";
-import { products } from "./product.controllers.js";
+import { Adress } from "../models/adress.model.js"
+import { Cart } from "../models/cart.model.js";
 
 
 const createOrder = asyncHandler(async(req, res) => {
@@ -19,7 +19,12 @@ const createOrder = asyncHandler(async(req, res) => {
 
     const pro = await Product.findById({_id: product})
 
-    // console.log(pro);
+    const adr = await Adress.findById(adress)
+    if (!adr) {
+        throw new ApiError(400, "Adress is not found")
+    }
+
+    // console.log(adr);
 
     const create = await Order.create({
         product,
@@ -29,6 +34,15 @@ const createOrder = asyncHandler(async(req, res) => {
         status,
         paymentStatus,
         owner: pro.owner,
+        name: adr.name,
+        company: adr.company,
+        phone: adr.phone,
+        adress1: adr.adress1,
+        adress2: adr.adress2,
+        city: adr.city,
+        zip: adr.zip,
+        country: adr.country,
+        state: adr.state,
         // price,
     })
 
@@ -41,6 +55,7 @@ const createOrder = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, create, "Order created successfully"))
 
 })
+
 
 const updateOrder = asyncHandler(async(req, res) => {
     const {orderId} = req.params;
@@ -91,29 +106,7 @@ const userOrder = asyncHandler(async(req, res) => {
                             description: 1,
                             brand: 1,
                             image: 1,
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            $lookup: {
-                from: "adresses",
-                localField: "adress",
-                foreignField: "_id",
-                as: "address",
-                pipeline: [
-                    {
-                        $project: {
-                            name: 1,
-                            company: 1,
-                            phone: 1,
-                            address1: 1,
-                            address2: 1,
-                            city: 1,
-                            zip: 1,
-                            country: 1,
-                            state: 1,
+                            price: 1,
                         }
                     }
                 ]
@@ -123,16 +116,12 @@ const userOrder = asyncHandler(async(req, res) => {
             $addFields: {
                 product_details: {
                     $arrayElemAt: ["$products", 0]
-                },
-                address_detail: {
-                    $arrayElemAt: ["$address", 0]
                 }
             }
         },
         {
             $project: {
                 products: 0,
-                address: 0,
             }
         }
         
@@ -170,29 +159,7 @@ const ownerOrder = asyncHandler(async(req, res) => {
                             description: 1,
                             brand: 1,
                             image: 1,
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            $lookup: {
-                from: "adresses",
-                localField: "adress",
-                foreignField: "_id",
-                as: "address",
-                pipeline: [
-                    {
-                        $project: {
-                            name: 1,
-                            company: 1,
-                            phone: 1,
-                            address1: 1,
-                            address2: 1,
-                            city: 1,
-                            zip: 1,
-                            country: 1,
-                            state: 1,
+                            price: 1,
                         }
                     }
                 ]
@@ -203,15 +170,11 @@ const ownerOrder = asyncHandler(async(req, res) => {
                 product_details: {
                     $arrayElemAt: ["$products", 0]
                 },
-                address_detail: {
-                    $arrayElemAt: ["$address", 0]
-                }
             }
         },
         {
             $project: {
                 products: 0,
-                address: 0,
             }
         }
     ])
@@ -226,9 +189,83 @@ const ownerOrder = asyncHandler(async(req, res) => {
 })
 
 
+const createCartOrder = asyncHandler(async(req, res) => {
+    const {adress, status, paymentStatus} = req.body;
+    // console.log(product, quantity, adress, status, paymentStatus);
+
+    const carts = await Cart.find({userId: req.user._id})
+    // console.log(carts);
+
+    if (carts.length <= 0) {
+        throw new ApiError("First add something in your cart")
+    }
+
+    if (!adress || !status || !paymentStatus) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const adr = await Adress.findById(adress)
+    // const pro = await Product.findById({_id: product})
+
+    if (!adr ) {
+        throw new ApiError(400, "Adress is not found")
+    }
+
+    const arr = [];
+
+    try {
+        for (const cart of carts) {
+            const pro = await Product.findById({_id: cart.product})
+
+            if (!pro) {
+                throw new ApiError(400, "unable to get product details")
+            }
+
+            const create = await Order.create({
+                product: cart.product,
+                buyer: req.user._id,
+                quantity: cart.quantity,
+                adress,
+                status,
+                paymentStatus,
+                owner: pro.owner,
+                name: adr.name,
+                company: adr.company,
+                phone: adr.phone,
+                adress1: adr.adress1,
+                adress2: adr.adress2,
+                city: adr.city,
+                zip: adr.zip,
+                country: adr.country,
+                state: adr.state,
+                // price,
+            })
+
+            console.log("create", create);
+
+            arr.push(create)
+            console.log("arr", arr);
+        }
+    } catch (error) {
+        throw new ApiError(400, error)
+    }
+
+    console.log("array", arr);
+
+    if (arr.length <= 0) {
+        throw new ApiError(400, "unable to create order")
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, arr, "Order created successfully"))
+})
+
+
 export {
     createOrder,
     updateOrder,
     userOrder,
     ownerOrder,
+    createCartOrder,
 }
