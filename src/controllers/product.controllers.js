@@ -260,7 +260,8 @@ const getProduct = asyncHandler(async(req, res) => {
 })
 
 const products = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 20, cat = 'all', cate,  sortBy = 'title', sortType = 'asc'} = req.query;
+    const { page = '', limit = '', cat = " ", sortBy = 'price', sortType = 'des',  minPrice = '10', maxPrice = '200000', searchQuery = ''} = req.query;
+    // console.log(sortBy, sortType, minPrice, maxPrice);
 
     // Parse limit and calculate number of documents to skip for pagination
     const parsedLimit = parseInt(limit);
@@ -271,15 +272,29 @@ const products = asyncHandler(async (req, res) => {
 
     const parsedQuery = {};
 
-    if (cat !== "all") {
+    if (cat !== " ") {
         const categories = cat.split(',');
         console.log(cat);
         parsedQuery.category = { $in: categories };
     }
 
-    // const parsedQuery = JSON.parse(query);
+    if (searchQuery) {
+        const regex = new RegExp(searchQuery, 'i');
+        parsedQuery.title = regex;
+    }
 
-    // Query the database with the specified criteria, sorting, and pagination
+
+    if (minPrice || maxPrice) {
+        parsedQuery.price = {};
+        if (minPrice) {
+            parsedQuery.price.$gte = parseFloat(minPrice);
+        }
+        if (maxPrice) {
+            parsedQuery.price.$lte = parseFloat(maxPrice);
+        }
+    }
+
+
     const products = await Product.find(parsedQuery)
         .select('-owner')
         .sort(sortObj)
