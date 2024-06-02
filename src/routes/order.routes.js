@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {upload} from "../middlewares/multer.middlewares.js"
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
-import { createCartOrder, createOrder, ownerOrder, updateOrder, userOrder } from "../controllers/order.controller.js";
+import { createCartOrder, createOrder, getOrderById, ownerOrder, updateOrder, userOrder } from "../controllers/order.controller.js";
 
 
 const  router = Router();
@@ -15,5 +15,7 @@ router.route("/userOrder").post(verifyJWT, userOrder)
 router.route("/ownerOrder").post(verifyJWT, ownerOrder)
 
 router.route("/createCartOrder").post(verifyJWT, createCartOrder)
+
+router.route("/getOrderById/:orderId").post(verifyJWT, getOrderById)
 
 export default router;

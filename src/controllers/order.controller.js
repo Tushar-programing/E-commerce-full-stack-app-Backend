@@ -7,6 +7,8 @@ import { Order } from "../models/order.model.js";
 import { Adress } from "../models/adress.model.js"
 import { Cart } from "../models/cart.model.js";
 
+import mongoose from "mongoose";
+
 
 const createOrder = asyncHandler(async(req, res) => {
     const {product} = req.params;
@@ -188,7 +190,6 @@ const ownerOrder = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, order, "User orders retrieved Successfully"))
 })
 
-
 const createCartOrder = asyncHandler(async(req, res) => {
     const {adress, status, paymentStatus} = req.body;
     // console.log(product, quantity, adress, status, paymentStatus);
@@ -261,6 +262,61 @@ const createCartOrder = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, arr, "Order created successfully"))
 })
 
+const getOrderById = asyncHandler(async(req, res) => {
+    const {orderId} = req.params
+    // console.log(orderId);
+
+    if (!orderId) {
+        throw new ApiError(400, "orderId is required")
+    }
+
+    const order = await Order.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(orderId)
+            }
+        },
+        {
+            $lookup: {
+                from: "products",
+                localField: "product",
+                foreignField: "_id",
+                as: "products",
+                pipeline: [
+                    {
+                        $project: {
+                            title: 1,
+                            description: 1,
+                            brand: 1,
+                            image: 1,
+                            price: 1,
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                product_details: {
+                    $arrayElemAt: ["$products", 0]
+                },
+            }
+        },
+        {
+            $project: {
+                products: 0,
+            }
+        }
+    ])
+
+    // const get = await Order.findById(orderId);
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, order, "order fetched successfully"))
+
+})
+
 
 export {
     createOrder,
@@ -268,4 +324,5 @@ export {
     userOrder,
     ownerOrder,
     createCartOrder,
+    getOrderById,
 }
