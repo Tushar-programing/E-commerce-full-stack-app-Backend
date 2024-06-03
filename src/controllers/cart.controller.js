@@ -21,7 +21,7 @@ const create = asyncHandler(async(req, res) => {
 
     if (existedCart) {
         // throw new ApiError(400, "this is working")
-        if ((existedCart.quantity + quantity) <= 20) {
+        if ((existedCart.quantity + quantity) <= 10) {
             const plus = await Cart.findByIdAndUpdate(
                 existedCart._id,
                 {
@@ -44,7 +44,7 @@ const create = asyncHandler(async(req, res) => {
                 existedCart._id,
                 {
                     $set: {
-                        quantity: 20 ,
+                        quantity: 10,
                     }
                 },
                 {new: true}
