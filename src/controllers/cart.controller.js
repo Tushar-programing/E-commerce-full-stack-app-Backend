@@ -56,7 +56,7 @@ const create = asyncHandler(async(req, res) => {
     
             return res
             .status(200)
-            .json(new ApiResponse(200, plus, "You can not add more than 20 pcs"))
+            .json(new ApiResponse(200, plus, "You can not add more than 10 pcs"))
         }
         
     }
