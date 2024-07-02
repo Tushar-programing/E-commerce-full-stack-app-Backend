@@ -311,6 +311,19 @@ const products = asyncHandler(async (req, res) => {
     
 });
 
+const getYourProduct = asyncHandler(async(req, res) => {
+
+    const get = await Product.find({owner: req.user._id})
+
+    if (!get) {
+        throw new ApiError(400, "unable to get products")
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(201, get, "Product data found"));
+})
+
 
 
 export {
@@ -320,4 +333,5 @@ export {
     deleteProduct,
     getProduct,
     products,
+    getYourProduct,
 }
