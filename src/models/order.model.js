@@ -27,6 +27,9 @@ const orderSchema = new Schema(
             type: String,
             required: true,
         },
+        returnStatus: {
+            type: String,
+        },
         owner: {
             type: Schema.Types.ObjectId,
             ref: "User"
