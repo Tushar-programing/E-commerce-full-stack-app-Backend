@@ -8,122 +8,198 @@ import { Product } from "../models/product.model.js";
 
 
 const listProduct = asyncHandler(async(req, res) => {
-    const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category} = req.body
-    console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category);
 
-    if (!title || !description || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
-        throw new ApiError(400, "All fields are required")
-    }
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category} = req.body
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category);
 
-    if (!(status === "false" || status === "true")) {
-        throw new ApiError(400, "Status fields are required")
-    }
-
-    const owner = req.user?._id
-    console.log("owner", owner);
-
-    const files = req.files;
-    console.log(files);
-    if (!files) {
-        throw new ApiError(400, "please upload images")   
-    }
-
-    if (files.length > 10) {
-        throw new ApiError(400, "Can't upload more than 10 images")
-    }
-
-    const image = [];
-
-    for (const file of files) {
-
-        const localFilePath = file.path
-
-        const result = await uploadOnCloudinary(localFilePath)
-
-        if (result && result.url) {
-            image.push(result.url)
-        } else {
-            throw new ApiError(400, "unable to upload images on cloudinary")
+        if (!title || !description || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
+            throw new ApiError(400, "All fields are required")
         }
+
+        if (!(status === "false" || status === "true")) {
+            throw new ApiError(400, "Status fields are required")
+        }
+
+        const owner = req.user?._id
+        console.log("owner", owner);
+
+        const files = req.files;
+        console.log(files);
+        if (!files) {
+            throw new ApiError(400, "please upload images")   
+        }
+
+        if (files.length > 10) {
+            throw new ApiError(400, "Can't upload more than 10 images")
+        }
+
+        const image = [];
+
+        for (const file of files) {
+
+            const localFilePath = file.path
+
+            const result = await uploadOnCloudinary(localFilePath)
+
+            if (result && result.url) {
+                image.push(result.url)
+            } else {
+                throw new ApiError(400, "unable to upload images on cloudinary")
+            }
+        }
+
+        console.log("working 3");
+
+        if (!image) {
+            throw new ApiError(400, "Image is not uploaded on cloudinary");
+        }
+        console.log("working 4");
+
+        const create = await Product.create({
+            title,
+            description,
+            keyword,
+            status,
+            brand,
+            model,
+            use,
+            material,
+            width,
+            height,
+            weight,
+            price,
+            image,
+            owner,
+            category,
+        })
+        console.log("working 5");
+
+        if (!create) {
+            throw new ApiError(400, "unable to create product")
+        }
+
+        console.log("working 6");
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, create, "product created successfully"))
+    } else {
+        throw new ApiError(400, "Access Denied!")
     }
-
-    console.log("working 3");
-
-    if (!image) {
-        throw new ApiError(400, "Image is not uploaded on cloudinary");
-    }
-    console.log("working 4");
-
-    const create = await Product.create({
-        title,
-        description,
-        keyword,
-        status,
-        brand,
-        model,
-        use,
-        material,
-        width,
-        height,
-        weight,
-        price,
-        image,
-        owner,
-        category,
-    })
-    console.log("working 5");
-
-    if (!create) {
-        throw new ApiError(400, "unable to create product")
-    }
-
-    console.log("working 6");
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200, create, "product created successfully"))
-
+    
 })
 
 const updateProduct = asyncHandler(async(req, res) => {
-    const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category} = req.body;
-    const  {productId} = req.params;
+
+    if (req?.user?.email === "ttushar476@gmail.com") {
+
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category} = req.body;
+        const  {productId} = req.params;
+        
+        console.log(productId);
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category);
+
+        if (!title || !description || !keyword || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
+            throw new ApiError(400, "All fields are required")
+        }
+
+        if (!(status === "false" || status === "true")) {
+            throw new ApiError(400, "Status fields are required")
+        }
+
+        if (!productId) {
+            throw new ApiError(400, "productId not found")
+        }
+
+        const exist = await Product.findById(productId)
+        if (!exist) {
+            throw new ApiError(400, "No product found with this productId")
+        } else if (exist.owner.toString() !== req.user._id.toString()) {
+            console.log(exist.owner.toString(), req.user._id.toString());
+            throw new ApiError(400, "Unauthorized user for editing this product");
+        }
+
+        const files = req.files;
+
+        if (!files) {
+            throw new ApiError(400, "First choose some files")
+        }
+
+        let image;
+
+        if (files && files.length > 0) {
+            image = [];
+
+            for (const file of files) {
+                const localFilePath = file.path;
+                const upload = await uploadOnCloudinary(localFilePath);
+
+                if (upload && upload.url) {
+                    console.log(upload.url);
+                    image.push(upload.url);
+                } else {
+                    throw new ApiError(400, "Unable to upload images on Cloudinary");
+                }
+            }
+        } else {
+            image = exist.image;
+        }
+
+        const update = await Product.findByIdAndUpdate(
+            productId,
+            {
+                $set: {
+                    title,
+                    description,
+                    keyword,
+                    status,
+                    brand,
+                    model,
+                    use,
+                    material,
+                    width,
+                    height,
+                    weight,
+                    price,
+                    image,
+                    category,
+                }
+            },
+            {new: true}
+        )
+
+        if (!update) {
+            throw new ApiError(400, "Unbale to update the product");
+        }
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, update, "The product has been updated successfully"));
+    } else {
+        throw new ApiError(400, "Acess Denied!")
+    }
     
-    console.log(productId);
-    console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category);
+})
 
-    if (!title || !description || !keyword || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
-        throw new ApiError(400, "All fields are required")
-    }
+const updateImage = asyncHandler(async(req, res) => {
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const {productId} = req.params;
 
-    if (!(status === "false" || status === "true")) {
-        throw new ApiError(400, "Status fields are required")
-    }
+        if (!productId) {
+            throw new ApiError(400, "Unable to get product detail")
+        }
 
-    if (!productId) {
-        throw new ApiError(400, "productId not found")
-    }
+        const files = req.files;
 
-    const exist = await Product.findById(productId)
-    if (!exist) {
-        throw new ApiError(400, "No product found with this productId")
-    } else if (exist.owner.toString() !== req.user._id.toString()) {
-        console.log(exist.owner.toString(), req.user._id.toString());
-        throw new ApiError(400, "Unauthorized user for editing this product");
-    }
+        if (!files) {
+            throw new ApiError(400, "First choose some files")
+        }
 
-    const files = req.files;
-
-    if (!files) {
-        throw new ApiError(400, "First choose some files")
-    }
-
-    let image;
-
-    if (files && files.length > 0) {
-        image = [];
+        const image = [];
 
         for (const file of files) {
+
             const localFilePath = file.path;
             const upload = await uploadOnCloudinary(localFilePath);
 
@@ -131,112 +207,58 @@ const updateProduct = asyncHandler(async(req, res) => {
                 console.log(upload.url);
                 image.push(upload.url);
             } else {
-                throw new ApiError(400, "Unable to upload images on Cloudinary");
+                throw new ApiError(400, "unable to upload images on cloudinary")
             }
         }
+
+        if (!image) {
+            throw new ApiError(400, "Image has uploaded but not found")
+        }
+
+        const update = await Product.findByIdAndUpdate(
+            productId,
+            {
+                $set: {
+                    image,
+                }
+            },
+            {new: true}
+        )
+
+        if (!update) {
+            throw new ApiError(404, "Unable to  update the product");
+        }
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, update, "product updated  successfully"));
     } else {
-        image = exist.image;
+        throw new ApiError(400, "Access Denied!")
     }
-
-    const update = await Product.findByIdAndUpdate(
-        productId,
-        {
-            $set: {
-                title,
-                description,
-                keyword,
-                status,
-                brand,
-                model,
-                use,
-                material,
-                width,
-                height,
-                weight,
-                price,
-                image,
-                category,
-            }
-        },
-        {new: true}
-    )
-
-    if (!update) {
-        throw new ApiError(400, "Unbale to update the product");
-    }
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200, update, "The product has been updated successfully"));
-})
-
-const updateImage = asyncHandler(async(req, res) => {
-    const {productId} = req.params;
-
-    if (!productId) {
-        throw new ApiError(400, "Unable to get product detail")
-    }
-
-    const files = req.files;
-
-    if (!files) {
-        throw new ApiError(400, "First choose some files")
-    }
-
-    const image = [];
-
-    for (const file of files) {
-        
-        const localFilePath = file.path;
-        const upload = await uploadOnCloudinary(localFilePath);
-
-        if (upload && upload.url) {
-            console.log(upload.url);
-            image.push(upload.url);
-        } else {
-            throw new ApiError(400, "unable to upload images on cloudinary")
-        }
-    }
-
-    if (!image) {
-        throw new ApiError(400, "Image has uploaded but not found")
-    }
-
-    const update = await Product.findByIdAndUpdate(
-        productId,
-        {
-            $set: {
-                image,
-            }
-        },
-        {new: true}
-    )
-
-    if (!update) {
-        throw new ApiError(404, "Unable to  update the product");
-    }
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200, update, "product updated  successfully"));
+    
 })
 
 const deleteProduct = asyncHandler(async(req, res) => {
-    const {productId} = req.params;
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const {productId} = req.params;
 
-    if (!productId) {
-        throw new ApiError(400, "Please provide a valid id");
+        if (!productId) {
+            throw new ApiError(400, "Please provide a valid id");
+        }
+
+        const del = await Product.findByIdAndDelete(productId);
+
+        if (!del) {
+            throw new ApiError(400, "unable to delete this product");
+        }
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "product deleted successfully"))
+    } else {
+        throw new ApiError(400, "Access Denied!")
     }
-
-    const del = await Product.findByIdAndDelete(productId);
-
-    if (!del) {
-        throw new ApiError(400, "unable to delete this product");
-    }
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "product deleted successfully"))
+    
 })
 
 const getProduct = asyncHandler(async(req, res) => {
@@ -271,7 +293,6 @@ const products = asyncHandler(async (req, res) => {
     const sortObj = { [sortBy]: sortStage };
 
     const parsedQuery = {};
-
     if (cat !== " ") {
         const categories = cat.split(',');
         console.log(cat);
@@ -313,15 +334,20 @@ const products = asyncHandler(async (req, res) => {
 
 const getYourProduct = asyncHandler(async(req, res) => {
 
-    const get = await Product.find({owner: req.user._id})
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const get = await Product.find({owner: req.user._id})
 
-    if (!get) {
-        throw new ApiError(400, "unable to get products")
+        if (!get) {
+            throw new ApiError(400, "unable to get products")
+        }
+
+        return res
+        .status(200)
+        .json(new ApiResponse(201, get, "Product data found"));
+    } else {
+        throw new ApiError(400, "Access Denied!")
     }
-
-    return res
-    .status(200)
-    .json(new ApiResponse(201, get, "Product data found"));
+    
 })
 
 

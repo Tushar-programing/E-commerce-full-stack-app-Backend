@@ -142,52 +142,57 @@ const userOrder = asyncHandler(async(req, res) => {
 
 const ownerOrder = asyncHandler(async(req, res) => {
 
-    const order = await Order.aggregate([
-        {
-            $match: {
-                owner: req.user._id
-            }
-        },
-        {
-            $lookup: {
-                from: "products",
-                localField: "product",
-                foreignField: "_id",
-                as: "products",
-                pipeline: [
-                    {
-                        $project: {
-                            title: 1,
-                            description: 1,
-                            brand: 1,
-                            image: 1,
-                            price: 1,
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const order = await Order.aggregate([
+            {
+                $match: {
+                    owner: req.user._id
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "product",
+                    foreignField: "_id",
+                    as: "products",
+                    pipeline: [
+                        {
+                            $project: {
+                                title: 1,
+                                description: 1,
+                                brand: 1,
+                                image: 1,
+                                price: 1,
+                            }
                         }
-                    }
-                ]
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    product_details: {
+                        $arrayElemAt: ["$products", 0]
+                    },
+                }
+            },
+            {
+                $project: {
+                    products: 0,
+                }
             }
-        },
-        {
-            $addFields: {
-                product_details: {
-                    $arrayElemAt: ["$products", 0]
-                },
-            }
-        },
-        {
-            $project: {
-                products: 0,
-            }
+        ])
+    
+        if (!order) {
+            throw new ApiError(400, "You have no order yet")
         }
-    ])
-
-    if (!order) {
-        throw new ApiError(400, "You have no order yet")
+    
+        return res
+        .status(200)
+        .json(new ApiResponse(200, order, "User orders retrieved Successfully"))
+    } else {
+        throw new ApiError(400, "Acess Denied!")
     }
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200, order, "User orders retrieved Successfully"))
+    
 })
 
 const createCartOrder = asyncHandler(async(req, res) => {
