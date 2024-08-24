@@ -87,6 +87,53 @@ const updateOrder = asyncHandler(async(req, res) => {
 
 })
 
+const returnStatus = asyncHandler(async(req, res) => {
+    const {orderId} = req.params;
+    const {status} = req.body
+    
+    if (!orderId) {
+        throw new ApiError(400, "Order Id not found!")
+    }
+
+    if (!(status === "refund" || status === "replace" || status === "resolved")) {
+        throw new ApiError(400, "Wrong data!")
+    }
+
+    const order = await Order.findById(orderId)
+
+    if (!order) {
+        throw new ApiError(400, "Order not Found!")
+    }
+
+    if (order?.returnStatus === "refund" || order?.returnStatus === "replace") {
+        if (!(status === "resolved")) {
+            throw new ApiError(400, "Access Denied!")
+        }
+    }
+
+    if (!(order?.status === "delivered")) {
+        throw new ApiError(400, "First Deliver than Change!")
+    }
+
+    const update = await Order.findByIdAndUpdate(
+        orderId,
+        {
+            $set: {
+                returnStatus: status
+            }
+        },
+        {new: true}
+    )
+
+    if (!update) {
+        throw new ApiError(400, "unable to update!")
+    }
+
+    return res
+    .status(201)
+    .json(new ApiResponse(201, update?.returnStatus, "Order updated successfully"));
+})
+
 const userOrder = asyncHandler(async(req, res) => {
     
     const order = await Order.aggregate([
@@ -193,6 +240,61 @@ const ownerOrder = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Acess Denied!")
     }
     
+})
+
+const ownerReturn = asyncHandler(async(req, res) => {
+
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const order = await Order.aggregate([
+            {
+                $match: {
+                    owner: req.user._id, 
+                    returnStatus: { $in: ["refund", "replace", "resolved"] }
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "product",
+                    foreignField: "_id",
+                    as: "products",
+                    pipeline: [
+                        {
+                            $project: {
+                                title: 1,
+                                description: 1,
+                                brand: 1,
+                                image: 1,
+                                price: 1,
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    product_details: {
+                        $arrayElemAt: ["$products", 0]
+                    },
+                }
+            },
+            {
+                $project: {
+                    products: 0,
+                }
+            }
+        ])
+    
+        if (!order) {
+            throw new ApiError(400, "You have no order yet")
+        }
+    
+        return res
+        .status(200)
+        .json(new ApiResponse(200, order, "User orders retrieved Successfully"))
+    } else {
+        throw new ApiError(400, "Acess Denied!")
+    }
 })
 
 const createCartOrder = asyncHandler(async(req, res) => {
@@ -330,4 +432,6 @@ export {
     ownerOrder,
     createCartOrder,
     getOrderById,
+    returnStatus,
+    ownerReturn
 }
