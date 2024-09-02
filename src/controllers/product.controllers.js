@@ -10,10 +10,10 @@ import { Product } from "../models/product.model.js";
 const listProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
-        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category} = req.body
-        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category);
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory} = req.body
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory);
 
-        if (!title || !description || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
+        if (!title || !description || !brand || !model || !use || !material || !width || !height || !weight || !price || !category ) {
             throw new ApiError(400, "All fields are required")
         }
 
@@ -72,6 +72,7 @@ const listProduct = asyncHandler(async(req, res) => {
             image,
             owner,
             category,
+            subCategory,
         })
         console.log("working 5");
 
@@ -94,11 +95,11 @@ const updateProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
 
-        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category} = req.body;
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory} = req.body;
         const  {productId} = req.params;
         
         console.log(productId);
-        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category);
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory);
 
         if (!title || !description || !keyword || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
             throw new ApiError(400, "All fields are required")
@@ -164,6 +165,7 @@ const updateProduct = asyncHandler(async(req, res) => {
                     price,
                     image,
                     category,
+                    subCategory,
                 }
             },
             {new: true}
