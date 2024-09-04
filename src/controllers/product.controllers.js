@@ -10,8 +10,10 @@ import { Product } from "../models/product.model.js";
 const listProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
-        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory} = req.body
-        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory);
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram} = req.body
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram);
+
+        const instaBool = instagram === "true";
 
         if (!title || !description || !brand || !model || !use || !material || !width || !height || !weight || !price || !category ) {
             throw new ApiError(400, "All fields are required")
@@ -27,7 +29,7 @@ const listProduct = asyncHandler(async(req, res) => {
         const files = req.files;
         console.log(files);
         if (!files) {
-            throw new ApiError(400, "please upload images")   
+            throw new ApiError(400, "please upload images")
         }
 
         if (files.length > 10) {
@@ -73,6 +75,7 @@ const listProduct = asyncHandler(async(req, res) => {
             owner,
             category,
             subCategory,
+            instagram : instaBool,
         })
         console.log("working 5");
 
@@ -95,11 +98,13 @@ const updateProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
 
-        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory} = req.body;
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram} = req.body;
         const  {productId} = req.params;
         
         console.log(productId);
-        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory);
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram);
+
+        const instaBool = instagram === "true";
 
         if (!title || !description || !keyword || !brand || !model || !use || !material || !width || !height || !weight || !price || !category) {
             throw new ApiError(400, "All fields are required")
@@ -166,6 +171,7 @@ const updateProduct = asyncHandler(async(req, res) => {
                     image,
                     category,
                     subCategory,
+                    instagram : instaBool,
                 }
             },
             {new: true}

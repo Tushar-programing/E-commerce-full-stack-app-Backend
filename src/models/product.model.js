@@ -64,6 +64,9 @@ const productSchema = new Schema(
         },
         subCategory: {
             type: String,
+        },
+        instagram: {
+            type: Boolean,
         }
     },
     {
