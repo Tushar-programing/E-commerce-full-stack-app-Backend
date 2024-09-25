@@ -67,6 +67,9 @@ const productSchema = new Schema(
         },
         instagram: {
             type: Boolean,
+        }, 
+        color: {
+            type: String,
         }
     },
     {
