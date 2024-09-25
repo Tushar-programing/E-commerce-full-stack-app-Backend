@@ -10,8 +10,8 @@ import { Product } from "../models/product.model.js";
 const listProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
-        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram} = req.body
-        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram);
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram, color} = req.body
+        console.log(title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram, color);
 
         const instaBool = instagram === "true";
 
@@ -76,6 +76,7 @@ const listProduct = asyncHandler(async(req, res) => {
             category,
             subCategory,
             instagram : instaBool,
+            color,
         })
         console.log("working 5");
 
@@ -98,7 +99,7 @@ const updateProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
 
-        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram} = req.body;
+        const {title, description, keyword, status, brand, model, use, material, width, height, weight, price, category, subCategory, instagram, color} = req.body;
         const  {productId} = req.params;
         
         console.log(productId);
@@ -172,6 +173,7 @@ const updateProduct = asyncHandler(async(req, res) => {
                     category,
                     subCategory,
                     instagram : instaBool,
+                    color,
                 }
             },
             {new: true}
@@ -290,7 +292,7 @@ const getProduct = asyncHandler(async(req, res) => {
 })
 
 const products = asyncHandler(async (req, res) => {
-    const { page = '', limit = '', cat = " ", sortBy = 'price', sortType = 'des',  minPrice = '10', maxPrice = '200000', searchQuery = ''} = req.query;
+    const { page = '1', limit = '50', cat = " ", sortBy = 'price', sortType = 'des',  minPrice = '10', maxPrice = '200000', searchQuery = '', color = '', material = ''} = req.query;
     // console.log(sortBy, sortType, minPrice, maxPrice);
 
     // Parse limit and calculate number of documents to skip for pagination
@@ -312,7 +314,6 @@ const products = asyncHandler(async (req, res) => {
         parsedQuery.title = regex;
     }
 
-
     if (minPrice || maxPrice) {
         parsedQuery.price = {};
         if (minPrice) {
@@ -322,7 +323,18 @@ const products = asyncHandler(async (req, res) => {
             parsedQuery.price.$lte = parseFloat(maxPrice);
         }
     }
+    
+    if (!(color === 'all' || color === '')) {
+        console.log("color working");
+        const colors = color.split(',');
+        parsedQuery.color = { $in: colors };
+    }
 
+
+    if (!(material === 'all' || material === '')) {
+        const materials = material.split(',');
+        parsedQuery.material = { $in: materials };
+    }
 
     const products = await Product.find(parsedQuery)
         .select('-owner')
