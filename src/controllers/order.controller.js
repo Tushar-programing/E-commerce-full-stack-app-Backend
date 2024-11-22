@@ -297,6 +297,62 @@ const ownerReturn = asyncHandler(async(req, res) => {
     }
 })
 
+const customerCancel = asyncHandler(async(req, res) => {
+
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const order = await Order.aggregate([
+            {
+                $match: {
+                    owner: req.user._id, 
+                    // returnStatus: { $in: ["refund", "replace", "resolved"] }
+                    status: "cancel"
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "product",
+                    foreignField: "_id",
+                    as: "products",
+                    pipeline: [
+                        {
+                            $project: {
+                                title: 1,
+                                description: 1,
+                                brand: 1,
+                                image: 1,
+                                price: 1,
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    product_details: {
+                        $arrayElemAt: ["$products", 0]
+                    },
+                }
+            },
+            {
+                $project: {
+                    products: 0,
+                }
+            }
+        ])
+    
+        if (!order) {
+            throw new ApiError(400, "You have no order yet")
+        }
+    
+        return res
+        .status(200)
+        .json(new ApiResponse(200, order, "User orders retrieved Successfully"))
+    } else {
+        throw new ApiError(400, "Acess Denied!")
+    }
+})
+
 const createCartOrder = asyncHandler(async(req, res) => {
     const {adress, status, paymentStatus} = req.body;
     // console.log(product, quantity, adress, status, paymentStatus);
@@ -433,5 +489,6 @@ export {
     createCartOrder,
     getOrderById,
     returnStatus,
-    ownerReturn
+    ownerReturn,
+    customerCancel
 }
