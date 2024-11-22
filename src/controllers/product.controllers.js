@@ -310,9 +310,18 @@ const products = asyncHandler(async (req, res) => {
     }
 
     if (searchQuery) {
-        const regex = new RegExp(searchQuery, 'i');
-        parsedQuery.title = regex;
+        const keywords = searchQuery.split(' '); // Split the searchQuery into individual words
+        const regexArray = keywords.flatMap((word) => [
+            { title: { $regex: new RegExp(word, 'i') } }, // Search in title
+            { keyword: { $regex: new RegExp(word, 'i') } }, // Search in keyword
+            { model: { $regex: new RegExp(word, 'i') } }, // Search in model
+            { category: { $regex: new RegExp(word, 'i') } }, // Search in category
+        ]);
+    
+        // Combine all conditions using `$or` to match any keyword
+        parsedQuery.$or = regexArray;
     }
+    
 
     if (minPrice || maxPrice) {
         parsedQuery.price = {};
@@ -355,7 +364,7 @@ const products = asyncHandler(async (req, res) => {
 const getYourProduct = asyncHandler(async(req, res) => {
 
     if (req?.user?.email === "ttushar476@gmail.com") {
-        const get = await Product.find({owner: req.user._id})
+        const get = await Product.find({owner: req.user._id}).sort({ createdAt: -1 });
 
         if (!get) {
             throw new ApiError(400, "unable to get products")

@@ -161,6 +161,11 @@ const getAllCart = asyncHandler(async(req, res) => {
                 product: 0,
             }
         },
+        {
+            $sort: {
+                createdAt: -1 // Sort by createdAt in descending order
+            }
+        }
     ])
 
     if (!get) {

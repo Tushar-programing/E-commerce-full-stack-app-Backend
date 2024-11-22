@@ -58,8 +58,9 @@ const createOrder = asyncHandler(async(req, res) => {
 
 })
 
-
 const updateOrder = asyncHandler(async(req, res) => {
+    // if (req?.user?.email === "ttushar476@gmail.com" || req?.user?._id === ) {
+
     const {orderId} = req.params;
     const {status} = req.body;
 
@@ -67,23 +68,31 @@ const updateOrder = asyncHandler(async(req, res) => {
         throw new ApiError(400, "no order id found")
     }
 
-    const update = await Order.findByIdAndUpdate(
-        orderId,
-        {
-            $set: {
-                status,
+    const exist = await Order?.findById(orderId)
+    if (exist) {
+        
+        if(exist.buyer.toString() === req.user._id.toString() || req?.user?.email === "ttushar476@gmail.com"){
+            const update = await Order.findByIdAndUpdate(
+                orderId,
+                {
+                    $set: {
+                        status,
+                    }
+                },
+                {new: true}
+            )
+        
+            if (!update) {
+                throw new ApiError(400, "unable to update the order")
             }
-        },
-        {new: true}
-    )
-
-    if (!update) {
-        throw new ApiError(400, "unable to update the order")
+        
+            return res
+            .status(201)
+            .json(new ApiResponse(201, update, "Order updated successfully"));
+        } else {
+            throw new ApiError(403, "you are not the owner of this order")
+        }
     }
-
-    return res
-    .status(201)
-    .json(new ApiResponse(201, update, "Order updated successfully"));
 
 })
 
@@ -95,43 +104,54 @@ const returnStatus = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Order Id not found!")
     }
 
-    if (!(status === "refund" || status === "replace" || status === "resolved")) {
-        throw new ApiError(400, "Wrong data!")
-    }
+    const exist = await Order?.findById(orderId)
 
-    const order = await Order.findById(orderId)
+    if (exist) {
+        if(exist.buyer.toString() === req.user._id.toString() || req?.user?.email === "ttushar476@gmail.com"){
+            
+            if (!(status === "refund" || status === "replace" || status === "resolved")) {
+                throw new ApiError(400, "Wrong data!")
+            }
+        
+            const order = await Order.findById(orderId)
+        
+            if (!order) {
+                throw new ApiError(400, "Order not Found!")
+            }
+        
+            if (order?.returnStatus === "refund" || order?.returnStatus === "replace") {
+                if (!(status === "resolved")) {
+                    throw new ApiError(400, "Access Denied!")
+                }
+            }
+        
+            if (!(order?.status === "delivered")) {
+                throw new ApiError(400, "First Deliver than Change!")
+            }
+        
+            const update = await Order.findByIdAndUpdate(
+                orderId,
+                {
+                    $set: {
+                        returnStatus: status
+                    }
+                },
+                {new: true}
+            )
+        
+            if (!update) {
+                throw new ApiError(400, "unable to update!")
+            }
+        
+            return res
+            .status(201)
+            .json(new ApiResponse(201, update?.returnStatus, "Order updated successfully"));
 
-    if (!order) {
-        throw new ApiError(400, "Order not Found!")
-    }
-
-    if (order?.returnStatus === "refund" || order?.returnStatus === "replace") {
-        if (!(status === "resolved")) {
-            throw new ApiError(400, "Access Denied!")
+        } else {
+            throw new ApiError(403, "you are not the owner of this order")
         }
     }
-
-    if (!(order?.status === "delivered")) {
-        throw new ApiError(400, "First Deliver than Change!")
-    }
-
-    const update = await Order.findByIdAndUpdate(
-        orderId,
-        {
-            $set: {
-                returnStatus: status
-            }
-        },
-        {new: true}
-    )
-
-    if (!update) {
-        throw new ApiError(400, "unable to update!")
-    }
-
-    return res
-    .status(201)
-    .json(new ApiResponse(201, update?.returnStatus, "Order updated successfully"));
+    
 })
 
 const userOrder = asyncHandler(async(req, res) => {
@@ -171,6 +191,11 @@ const userOrder = asyncHandler(async(req, res) => {
         {
             $project: {
                 products: 0,
+            }
+        },
+        {
+            $sort: {
+                createdAt: -1 // Sort by createdAt in descending order
             }
         }
         
@@ -225,6 +250,11 @@ const ownerOrder = asyncHandler(async(req, res) => {
             {
                 $project: {
                     products: 0,
+                }
+            },
+            {
+                $sort: {
+                    createdAt: -1 // Sort by createdAt in descending order
                 }
             }
         ])
@@ -282,6 +312,11 @@ const ownerReturn = asyncHandler(async(req, res) => {
                 $project: {
                     products: 0,
                 }
+            },
+            {
+                $sort: {
+                    createdAt: -1 // Sort by createdAt in descending order
+                }
             }
         ])
     
@@ -337,6 +372,11 @@ const customerCancel = asyncHandler(async(req, res) => {
             {
                 $project: {
                     products: 0,
+                }
+            },
+            {
+                $sort: {
+                    createdAt: -1 // Sort by createdAt in descending order
                 }
             }
         ])
@@ -433,50 +473,61 @@ const getOrderById = asyncHandler(async(req, res) => {
         throw new ApiError(400, "orderId is required")
     }
 
-    const order = await Order.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(orderId)
-            }
-        },
-        {
-            $lookup: {
-                from: "products",
-                localField: "product",
-                foreignField: "_id",
-                as: "products",
-                pipeline: [
-                    {
-                        $project: {
-                            title: 1,
-                            description: 1,
-                            brand: 1,
-                            image: 1,
-                            price: 1,
-                        }
+    const exist = await Order?.findById(orderId)
+    if (exist) {
+        if(exist.buyer.toString() === req.user._id.toString() || req?.user?.email === "ttushar476@gmail.com"){
+            
+            const order = await Order.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose.Types.ObjectId(orderId)
                     }
-                ]
-            }
-        },
-        {
-            $addFields: {
-                product_details: {
-                    $arrayElemAt: ["$products", 0]
                 },
-            }
-        },
-        {
-            $project: {
-                products: 0,
-            }
+                {
+                    $lookup: {
+                        from: "products",
+                        localField: "product",
+                        foreignField: "_id",
+                        as: "products",
+                        pipeline: [
+                            {
+                                $project: {
+                                    title: 1,
+                                    description: 1,
+                                    brand: 1,
+                                    image: 1,
+                                    price: 1,
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    $addFields: {
+                        product_details: {
+                            $arrayElemAt: ["$products", 0]
+                        },
+                    }
+                },
+                {
+                    $project: {
+                        products: 0,
+                    }
+                }
+            ])
+        
+            // const get = await Order.findById(orderId);
+        
+            return res
+            .status(200)
+            .json(new ApiResponse(200, order, "order fetched successfully"))
+
+        } else {
+            throw new ApiError(403, "you are not the owner of this order")
         }
-    ])
+    }
 
-    // const get = await Order.findById(orderId);
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200, order, "order fetched successfully"))
+    
 
 })
 
