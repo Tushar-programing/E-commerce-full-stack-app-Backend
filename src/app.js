@@ -25,6 +25,7 @@ import adress from "./routes/adress.routes.js"
 import cart from "./routes/cart.routes.js"
 import order from "./routes/order.routes.js"
 import wishlist from "./routes/wish.routes.js"
+import buyNow from "./routes/buyNow.routes.js";
 
 // console.log("app.js working");
 app.use("/api/v1/users", userRouter)
@@ -38,6 +39,8 @@ app.use("/api/v1/cart", cart)
 app.use("/api/v1/order", order)
 
 app.use("/api/v1/wishlist", wishlist)
+
+app.use("/api/v1/buyNow", buyNow)
 
 // app.use((err, req, res, next) => {
 //     if (err instanceof ApiError) {

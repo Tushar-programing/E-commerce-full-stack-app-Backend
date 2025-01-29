@@ -178,9 +178,103 @@ const getAllCart = asyncHandler(async(req, res) => {
 
 })
 
+const getCartsByDate = asyncHandler(async (req, res) => {
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        const { startDate, endDate } = req.body;
+        
+        console.log(startDate, endDate);
+        
+        // Validate that both dates are provided
+        if (!startDate || !endDate) {
+            throw new ApiError(400, "Start date and end date are required");
+        }
+
+        // Convert dates to proper Date objects for querying
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        end.setUTCHours(23, 59, 59, 999);
+
+        // Fetch carts between the date range
+        const carts = await Cart.aggregate([
+            {
+                $match: {
+                    createdAt: {
+                        $gte: start, // Greater than or equal to start date
+                        $lte: end,   // Less than or equal to end date
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: "users", // Join with the Users collection
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "userDetails",
+                },
+            },
+            {
+                $lookup: {
+                    from: "products", // Join with the Products collection
+                    localField: "product",
+                    foreignField: "_id",
+                    as: "productDetails",
+                },
+            },
+            {
+                $unwind: "$userDetails", // Flatten user details array
+            },
+            {
+                $unwind: {
+                    path: "$productDetails", // Flatten product details array
+                    preserveNullAndEmptyArrays: true, // Handle cases with no products
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    createdAt: 1,
+                    userId: 1,
+                    "userDetails._id": 1,
+                    "userDetails.fullName": 1,
+                    "userDetails.mobile": 1,
+                    "userDetails.email": 1,
+                    "productDetails._id": 1,
+                    "productDetails.title": 1,
+                    "productDetails.brand": 1,
+                    "productDetails.price": 1,
+                    "productDetails.image": 1,
+                    "productDetails.quantity": 1,
+                    "productDetails.description": 1,
+                },
+            },
+            {
+                $sort: {
+                    createdAt: -1, // Sort by createdAt in descending order
+                },
+            },
+        ]);
+
+        // console.log(carts, );
+        
+
+        // if (!carts || carts.length === 0) {
+        //     throw new ApiError(400, "No carts found for the given date range");
+        // }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, carts, "Carts retrieved successfully"));
+    } else {
+        throw new ApiError(400, "Access Denied!");
+    }
+});
+
+
 export {
     create,
     updateCart,
     removeCart,
     getAllCart,
+    getCartsByDate,
 }

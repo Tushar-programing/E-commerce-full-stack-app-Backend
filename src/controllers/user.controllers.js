@@ -28,89 +28,122 @@ const generateAccessAndRefreshTokens = async(userid) => {
     }
 }
 
-const register = asyncHandler(async(req, res) => {
-    // console.log("register is working")
-    const {fullName, email, password} = req.body;
+const register = asyncHandler(async (req, res) => {
+    const { fullName, email, password } = req.body; // 'email' is used for mobile input
 
     console.log(fullName, email, password);
 
+    // Validate required fields
     if (!fullName || !email || !password) {
-        throw new ApiError(400, "all Fields are required")
+        throw new ApiError(400, "All fields are required");
     }
 
+    // Check if the input is a valid mobile number (10 digits)
+    const isMobile = /^[0-9]{10}$/.test(email);
+
+    console.log("workin3 ");
+
+    if (!isMobile) {
+        throw new ApiError(400, "Invalid mobile number format");
+    }
+
+    console.log("workin4");
+    
     const existedUser = await User.findOne({
-        email,
-    })
-
+        mobile: email,
+    });
+    console.log("workin5");
+    console.log(existedUser);
+    
     if (existedUser) {
-        throw new ApiError(400, "User already exist")
+        throw new ApiError(400, "User with this mobile number already exists");
     }
+    console.log("workin6", email);
 
-    const user =  await User.create({
+    // Create the new user
+    const user = await User.create({
         fullName,
-        email,
-        password
-    })
+        mobile: parseInt(email),
+        password,
+    });
+
+    console.log("workin7");
 
     if (!user) {
-        throw new ApiError(400, "unable to create user")
+        throw new ApiError(400, "Unable to create user");
     }
 
+    console.log("workin8");
+
+    // Return the response
     return res
-    .status(200)
-    .json(new ApiResponse(200, user, "succesfully created the user"))
+        .status(200)
+        .json(new ApiResponse(200, user, "Successfully created the user"));
+});
 
-})
 
-const login = asyncHandler(async(req, res) => {
-    // console.log("login is working");
-    const {email, password} = req.body;
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body; // Using 'email' for both email or mobile
 
     console.log(email, password);
 
     if (!email || !password) {
-        throw new ApiError(400, "all fields are required")
+        throw new ApiError(400, "Email/Mobile and Password are required");
     }
 
-    const user = await User.findOne({
-        email,
-    })
+    const isMobile = /^[0-9]{10}$/.test(email); // Check for a 10-digit mobile number
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); // Check for valid email format
+
+    if (!isMobile && !isEmail) {
+        throw new ApiError(400, "Invalid Email or Mobile format");
+    }
+
+    // Find the user by mobile or email based on input type
+    const user = await User.findOne(
+        isEmail ? { email } : { mobile: email }
+    );
 
     if (!user) {
-        throw new ApiError(400, "user does not exist")
+        throw new ApiError(400, "User does not exist");
     }
 
+    // Check if the password is correct
     const isPasswordCorrect = await user.isPasswordCorrect(password);
 
     if (!isPasswordCorrect) {
         throw new ApiError(400, "Incorrect Password");
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+    // Generate access and refresh tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
+    // Remove sensitive fields from the response
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
     const options = {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
-    }
+        sameSite: "none",
+    };
 
+    // Return response with cookies and user data
     return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-        new ApiResponse(
-            200,
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
                 {
-                    user: loggedInUser, accessToken, refreshToken
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken,
                 },
-                "User logged in succesfully"
-        )
-    )
+                "User logged in successfully"
+            )
+        );
+});
 
-})
 
 const logoutUser = asyncHandler(async(req, res) => {
     await User.findByIdAndUpdate(
@@ -247,6 +280,41 @@ const updateName = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, user, "name updated succesfully"))
 })
 
+const getAllUserData = asyncHandler(async(req, res) => {
+    if (req?.user?.email === "ttushar476@gmail.com") {
+        try {
+            const { startDate, endDate } = req.body;
+
+            console.log(startDate, endDate);
+            
+            // Validate that startDate and endDate are provided
+            if (!startDate || !endDate) {
+                return res.status(400).json({ message: "Start date and end date are required." });
+            }
+        
+            // Convert to ISO dates
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+        
+            // Ensure the end date includes the entire day
+            end.setHours(23, 59, 59, 999);
+        
+            // Fetch users within the date range
+            const users = await User.find({
+                createdAt: {
+                  $gte: start, // Greater than or equal to start date
+                  $lte: end,   // Less than or equal to end date
+                },
+            }).sort({ createdAt: -1 }); // Optional: Sort by creation date descending
+        
+            res.status(200).json({ success: true, data: users });
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+    }
+})
+
 
 export {
     register,
@@ -256,4 +324,5 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateName,
+    getAllUserData,
 }

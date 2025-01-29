@@ -12,25 +12,31 @@ const userSchema = new Schema(
             trim: true,
             index: true,
         },
+        mobile: {
+            type: String, // Use String to handle leading zeros in phone numbers
+            unique: true,
+            required: [true, 'Mobile number is required'],
+            trim: true,
+        },
         email: {
             type: String,
-            required: true,
             unique: true,
+            sparse: true, // Allows multiple null values
             lowercase: true,
-            trim: true
+            trim: true,
         },
         password: {
             type: String,
-            required: [true, 'Password is required']
+            required: [true, 'Password is required'],
         },
         refreshToken: {
             type: String,
-        }
+        },
     },
     {
         timestamps: true,
     }
-)
+);
 
 userSchema.pre("save", async function (next) {
     if(!this.isModified("password")) return next();
@@ -50,6 +56,7 @@ userSchema.methods.generateAccessToken = function(){
         {
             _id: this._id,
             email: this.email,
+            mobile: this.mobile,
             fullName: this.fullName,
         },
         process.env.ACCESS_TOKEN_SECRET,
@@ -64,6 +71,7 @@ userSchema.methods.generateRefreshToken = function(){
         {
             _id: this._id,
             email: this.email,
+            mobile: this.mobile,
             fullName: this.fullName,
         },
         process.env.REFRESH_TOKEN_SECRET,

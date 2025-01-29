@@ -28,32 +28,51 @@ const listProduct = asyncHandler(async(req, res) => {
 
         const files = req.files;
         console.log(files);
+        
         if (!files) {
-            throw new ApiError(400, "please upload images")
+            throw new ApiError(400, "Please upload images or banner images.");
         }
-
-        if (files.length > 10) {
-            throw new ApiError(400, "Can't upload more than 10 images")
+        
+        // Handle product images
+        const productImages = files.images || [];
+        const bannerImages = files.bannerImages || [];
+        
+        // Check for product image limits (max 10 images)
+        if (productImages.length > 10) {
+            throw new ApiError(400, "Can't upload more than 10 product images.");
         }
-
-        const image = [];
-
-        for (const file of files) {
-
-            const localFilePath = file.path
-
-            const result = await uploadOnCloudinary(localFilePath)
-
+        
+        // Initialize arrays to store image URLs
+        const productImageUrls = [];
+        const bannerImageUrls = [];
+        
+        // Upload product images to Cloudinary
+        for (const file of productImages) {
+            const localFilePath = file.path;
+            const result = await uploadOnCloudinary(localFilePath);
+            
             if (result && result.url) {
-                image.push(result.url)
+                productImageUrls.push(result.url);
             } else {
-                throw new ApiError(400, "unable to upload images on cloudinary")
+                throw new ApiError(400, "Unable to upload product images to Cloudinary.");
+            }
+        }
+        
+        // Upload banner images to Cloudinary
+        for (const file of bannerImages) {
+            const localFilePath = file.path;
+            const result = await uploadOnCloudinary(localFilePath);
+            
+            if (result && result.url) {
+                bannerImageUrls.push(result.url);
+            } else {
+                throw new ApiError(400, "Unable to upload banner images to Cloudinary.");
             }
         }
 
-        console.log("working 3");
+        console.log("working 3", bannerImageUrls, productImageUrls);
 
-        if (!image) {
+        if ((!productImageUrls) || (!bannerImageUrls) ) {
             throw new ApiError(400, "Image is not uploaded on cloudinary");
         }
         console.log("working 4");
@@ -71,7 +90,8 @@ const listProduct = asyncHandler(async(req, res) => {
             height,
             weight,
             price,
-            image,
+            image: productImageUrls,
+            bannerImage: bannerImageUrls,
             owner,
             category,
             subCategory,
@@ -132,26 +152,67 @@ const updateProduct = asyncHandler(async(req, res) => {
         if (!files) {
             throw new ApiError(400, "First choose some files")
         }
+        const productImages = files.images || [];
+        const bannerImages = files.bannerImages || [];
 
         let image;
 
-        if (files && files.length > 0) {
-            image = [];
+        if (files && productImages.length > 0) {
+            image = []
+            
+            // Check for product image limits (max 10 images)
+            if (productImages.length > 10) {
+                throw new ApiError(400, "Can't upload more than 10 product images.");
+            }
+            // Initialize arrays to store image URLs
+            // const productImageUrls = [];
+            // const bannerImageUrls = [];
 
-            for (const file of files) {
+            // Upload product images to Cloudinary
+            for (const file of productImages) {
                 const localFilePath = file.path;
-                const upload = await uploadOnCloudinary(localFilePath);
+                const result = await uploadOnCloudinary(localFilePath);
 
-                if (upload && upload.url) {
-                    console.log(upload.url);
-                    image.push(upload.url);
+                if (result && result.url) {
+                    image.push(result.url);
                 } else {
-                    throw new ApiError(400, "Unable to upload images on Cloudinary");
+                    throw new ApiError(400, "Unable to upload product images to Cloudinary.");
                 }
             }
         } else {
             image = exist.image;
         }
+
+        let bannerImage;
+
+        if (files && bannerImages.length > 0) {
+            bannerImage = []
+            
+            // Check for product image limits (max 10 images)
+            if (bannerImages.length > 10) {
+                throw new ApiError(400, "Can't upload more than 10 product images.");
+            }
+            // Initialize arrays to store image URLs
+            // const productImageUrls = [];
+            // const bannerImageUrls = [];
+
+            // Upload product images to Cloudinary
+            for (const file of bannerImages) {
+                const localFilePath = file.path;
+                const result = await uploadOnCloudinary(localFilePath);
+
+                if (result && result.url) {
+                    bannerImage.push(result.url);
+                } else {
+                    throw new ApiError(400, "Unable to upload product images to Cloudinary.");
+                }
+            }
+        } else {
+            bannerImage = exist.bannerImage;
+        }
+
+        console.log(bannerImage, image);
+        
 
         const update = await Product.findByIdAndUpdate(
             productId,
@@ -170,6 +231,7 @@ const updateProduct = asyncHandler(async(req, res) => {
                     weight,
                     price,
                     image,
+                    bannerImage,
                     category,
                     subCategory,
                     instagram : instaBool,

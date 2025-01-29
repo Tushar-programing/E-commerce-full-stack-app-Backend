@@ -6,9 +6,9 @@ import { deleteProduct, getProduct, getYourProduct, listProduct, products, updat
 
 const router = Router();
 
-router.route("/listProduct").post(verifyJWT, upload.array("images", 10), listProduct);
+router.route("/listProduct").post(verifyJWT, upload.fields([{ name: "images", maxCount: 10 },{ name: "bannerImages", maxCount: 10 }]), listProduct);
 
-router.route("/updateProduct/:productId").post(verifyJWT, upload.array("images", 10), updateProduct);
+router.route("/updateProduct/:productId").post(verifyJWT, upload.fields([{ name: "images", maxCount: 10 },{ name: "bannerImages", maxCount: 10 }]), updateProduct);
 
 router.route("/updateImage/:productId").post(verifyJWT, upload.array("images", 10), updateImage);
 
